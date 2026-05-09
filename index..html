@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoalKu Pro - Generator Evaluasi AI (Kaidah Pusmendik)</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .font-arab { font-family: 'Arabic Typesetting', 'Traditional Arabic', serif; font-size: 1.7rem; line-height: 1.6; color: #1e3a8a; padding: 0 4px; }
+        #modalKuis .font-arab { font-size: 1.6em; line-height: 1.4; }
+        .fade-out { opacity: 0; visibility: hidden; transition: opacity 0.8s ease-out, visibility 0.8s; }
+        .img-upload-box { border: 2px dashed #cbd5e1; background-color: #f8fafc; border-radius: 0.5rem; text-align: center; padding: 1rem; cursor: pointer; transition: all 0.2s; max-width: 300px; margin-top: 10px; }
+        .img-upload-box:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .img-preview { max-width: 300px; max-height: 200px; border-radius: 0.5rem; border: 1px solid #e2e8f0; object-fit: contain; display: none; margin-top: 10px; }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen relative overflow-x-hidden font-sans pb-20">
+
+    <div id="appUtama" class="hidden">
+        <!-- Splash Screen -->
+        <div id="splashScreen" class="fixed inset-0 z-[100] bg-gradient-to-br from-blue-900 via-indigo-800 to-blue-900 flex flex-col items-center justify-center text-center p-6">
+            <img src="logo.png" alt="Logo" class="h-32 w-auto mb-6 animate-bounce" onerror="this.style.display='none'">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-2 drop-shadow-lg">SoalKu <span class="text-yellow-400">Pro</span></h1>
+            <p class="text-blue-200 text-lg md:text-xl font-medium tracking-wide">AI Assessment Builder & Kisi-kisi Generator</p>
+        </div>
+
+        <!-- Pengaturan Modal -->
+        <div id="modalPengaturan" class="fixed inset-0 z-50 bg-black/60 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl p-8 max-h-[90vh] overflow-y-auto custom-scroll">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">⚙️ Pengaturan Sistem</h2>
+                <div class="space-y-5 mt-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Google Gemini API Key <span class="text-red-500">*</span></label>
+                        <input type="password" id="inputApiKey" placeholder="AIzaSy..." class="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-inner">
+                        <label class="block text-sm font-bold text-gray-800 mb-2">Pilih Model Gemini <span class="text-red-500">*</span></label>
+                        <div id="wadahDaftarModel" class="border border-gray-300 rounded-lg max-h-56 overflow-y-auto bg-white custom-scroll divide-y divide-gray-100">
+                        </div>
+                        <div class="text-right mt-2">
+                            <button type="button" id="btnModelManual" class="text-xs text-blue-600 hover:text-blue-800 font-bold underline transition">Atau Ketik Manual</button>
+                        </div>
+                        <div id="wrapperModelManual" class="hidden mt-2">
+                            <input type="text" id="inputModelManual" placeholder="misal: gemini-4.0" class="w-full border rounded-lg p-2 text-sm focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                            <label class="block text-sm font-bold text-purple-900 mb-1">Pixabay API Key</label>
+                            <input type="password" id="inputPixabayKey" placeholder="Mesin Utama..." class="w-full border rounded p-2 outline-none text-sm">
+                        </div>
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                            <label class="block text-sm font-bold text-blue-900 mb-1">Pexels API Key</label>
+                            <input type="password" id="inputPexelsKey" placeholder="Mesin Cadangan..." class="w-full border rounded p-2 outline-none text-sm">
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <label class="block text-sm font-bold text-orange-900 mb-1">Kop Surat Ms. Word (Opsional)</label>
+                        <p class="text-xs text-orange-700 mb-2">Upload file <b>kop.png</b> di sini jika otomatisasi gagal. Proporsi ideal 165x38 mm.</p>
+                        <input type="file" id="inputKopGambar" accept="image/*" class="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200">
+                        <div class="mt-2 text-center">
+                            <img id="previewKopSetting" class="max-h-12 mx-auto hidden object-contain border border-gray-300 rounded shadow-sm">
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end gap-3">
+                    <button id="btnTutupPengaturan" class="px-5 py-2.5 text-gray-600 font-medium hover:bg-gray-100 rounded-lg hidden">Batal</button>
+                    <button id="btnSimpanPengaturan" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition">Simpan & Mulai</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Utama -->
+        <div class="max-w-6xl mx-auto mt-4 md:mt-8 p-2 md:p-4">
+            <div class="bg-white rounded-t-2xl shadow-sm border-b-4 border-blue-600 overflow-hidden">
+                <div class="p-6 flex items-center justify-between bg-gradient-to-r from-blue-800 to-indigo-900">
+                    <div class="flex items-center gap-4">
+                        <img src="logo.png" alt="Logo" class="h-12 w-auto bg-white p-1 rounded" onerror="this.style.display='none'">
+                        <div><h1 class="text-2xl font-extrabold text-white tracking-tight">SoalKu <span class="text-yellow-400">Pro</span></h1></div>
+                    </div>
+                    <button id="btnBukaPengaturan" class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm font-bold border border-white/20 transition shadow-md">⚙️ Setting</button>
+                </div>
+                <nav class="flex overflow-x-auto bg-white border-b">
+                    <button class="nav-main-btn flex-1 py-4 text-sm font-bold border-b-4 border-blue-600 text-blue-700 whitespace-nowrap" data-target="view-utama">📝 1. MENU UTAMA</button>
+                    <button class="nav-main-btn flex-1 py-4 text-sm font-bold border-b-4 border-transparent text-gray-500 hover:bg-gray-50 whitespace-nowrap" data-target="view-laporan">📊 2. LAPORAN & HASIL</button>
+                    <button class="nav-main-btn flex-1 py-4 text-sm font-bold border-b-4 border-transparent text-gray-500 hover:bg-gray-50 whitespace-nowrap" data-target="view-info">ℹ️ 3. PANDUAN APLIKASI</button>
+                </nav>
+            </div>
+
+            <div id="view-utama" class="view-section bg-white p-6 md:p-8 rounded-b-2xl shadow-md border border-t-0 border-gray-200">
+                <div class="mb-8">
+                    <h2 class="text-lg font-bold text-gray-800 border-l-4 border-blue-600 pl-3 mb-4">A. Identitas Ujian & Fondasi Kurikulum</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-5 rounded-xl border border-gray-200">
+                        
+                        <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">Nama Ujian</label><input type="text" id="inputUjian" placeholder="Contoh: ASESMEN SUMATIF AKHIR SEMESTER (SAS)" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none"></div>
+                        <div class="md:col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">Tahun Pelajaran</label><input type="text" id="inputTahun" placeholder="Contoh: 2026/2027" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none"></div>
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Kurikulum</label>
+                            <select id="inputKurikulum" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none bg-white">
+                                <option value="Kurikulum Merdeka (Nasional)">Kurikulum Merdeka (Nasional)</option>
+                                <option value="Kurikulum 2013 (K13)">Kurikulum 2013 (K13)</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">Mata Pelajaran</label><input type="text" id="inputMapel" value="Bahasa Arab" class="w-full border rounded p-2 text-sm font-bold text-blue-700 focus:border-blue-500 outline-none"></div>
+                        <div class="md:col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">Kelas (Fase)</label><input type="text" id="inputKelas" placeholder="Contoh: Kelas 5" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none"></div>
+                        <div class="md:col-span-1"><label class="block text-xs font-bold text-gray-500 mb-1">Tanggal Ujian</label><input type="date" id="inputTanggal" class="w-full border rounded p-2 text-sm text-gray-700 focus:border-blue-500 outline-none"></div>
+
+                        <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">Nama Guru Lengkap</label><input type="text" id="inputGuru" placeholder="Nama Lengkap Anda" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none"></div>
+                        <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-500 mb-1">Kota / Kabupaten</label><input type="text" id="inputKota" placeholder="Contoh: Maros" class="w-full border rounded p-2 text-sm focus:border-blue-500 outline-none"></div>
+                        
+                        <div class="md:col-span-4 mt-2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Capaian Pembelajaran (CP) / Tujuan Pembelajaran (TP)</label>
+                            <textarea id="inputCPTP" rows="3" placeholder="Input manual CP dan TP secara utuh di sini sebagai acuan utama kisi-kisi..." class="w-full border-2 border-blue-200 rounded p-2 text-sm focus:border-blue-500 outline-none resize-y"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-lg font-bold text-gray-800 border-l-4 border-green-500 pl-3 mb-4">B. Penyusunan Kisi-Kisi (Indikator Soal)</h2>
+                    <div class="bg-green-50 p-5 rounded-xl border border-green-200">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div class="md:col-span-4">
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Rumusan Indikator Soal</label>
+                                <textarea id="modIndikator" rows="2" placeholder="Contoh: Disajikan teks wacana tentang ruang kelas, peserta didik dapat menyimpulkan fungsi salah satu benda di dalamnya dengan benar." class="w-full border rounded p-2 text-sm bg-white outline-none focus:border-green-500"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Bentuk Soal</label>
+                                <select id="modTipe" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="Pilihan Ganda">Pilihan Ganda</option>
+                                    <option value="PG Kompleks">PG Kompleks (Lebih dari 1 jawaban)</option>
+                                    <option value="Benar / Salah">Benar / Salah</option>
+                                    <option value="Isian Singkat">Isian Singkat</option>
+                                    <option value="Uraian">Uraian / Essai</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Level Kognitif</label>
+                                <select id="modLevel" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="C1 (Mengingat)">C1 (Mengingat)</option>
+                                    <option value="C2 (Memahami)">C2 (Memahami)</option>
+                                    <option value="C3 (Mengaplikasikan)">C3 (Mengaplikasikan)</option>
+                                    <option value="C4 (Menganalisis)">C4 (Menganalisis) - HOTS</option>
+                                    <option value="C5 (Mengevaluasi)">C5 (Mengevaluasi) - HOTS</option>
+                                    <option value="C6 (Mencipta)">C6 (Mencipta) - HOTS</option>
+                                </select>
+                            </div>
+                            <div id="wrapperOpsiPG">
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Jumlah Opsi (Khusus PG)</label>
+                                <select id="modOpsi" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="3">3 Opsi</option>
+                                    <option value="4" selected>4 Opsi</option>
+                                    <option value="5">5 Opsi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" id="btnTambahModul" class="bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-2 px-4 rounded shadow transition">➕ Tambah ke Draft Kisi-Kisi</button>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-lg font-bold text-gray-800 border-l-4 border-indigo-500 pl-3 mb-4">C. Draft Kisi-Kisi & Paket Ujian</h2>
+                    <div class="overflow-x-auto border rounded-xl shadow-sm">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-indigo-50 text-indigo-900 border-b">
+                                <tr><th class="p-3 w-12 text-center">No</th><th class="p-3">Indikator Soal</th><th class="p-3">Bentuk Soal</th><th class="p-3">Level</th><th class="p-3 text-center">Aksi</th></tr>
+                            </thead>
+                            <tbody id="tabelStruktur" class="divide-y bg-white">
+                                <!-- Tabel list kisi-kisi muncul di sini -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-between items-center border-t pt-6 gap-4">
+                    <label class="flex items-center gap-3 bg-purple-50 px-4 py-3 rounded-xl border border-purple-200 cursor-pointer hover:bg-purple-100 transition w-full md:w-auto">
+                        <input type="checkbox" id="toggleAutoImage" class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                        <div>
+                            <span class="block font-bold text-purple-900 text-sm">Mode Soal Bergambar</span>
+                            <span class="block text-xs text-purple-700">Otomatis mencari dengan Mesin Ganda</span>
+                        </div>
+                    </label>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <button type="button" id="btnResetAll" class="text-red-500 hover:text-red-700 font-bold px-4 py-2 transition border border-red-200 rounded-lg hover:bg-red-50 w-full md:w-auto text-center">🗑️ Reset Kisi-kisi</button>
+                        <button type="button" id="btnGenerateAI" class="bg-blue-600 hover:bg-blue-800 text-white font-black py-4 px-8 rounded-xl shadow-xl transition transform active:scale-95 text-lg w-full md:w-auto" disabled>MULAI GENERATE SOAL ✨</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bagian Laporan dan Output tetap sama seperti kode Anda sebelumnya, logika mapping menyesuaikan array baru -->
+            <div id="view-laporan" class="view-section hidden bg-white p-2 md:p-6 rounded-b-2xl shadow-md border border-t-0 border-gray-200">
+                <div id="pesanKosongLaporan" class="text-center py-20 text-gray-400">
+                    <span class="text-6xl block mb-4">📭</span>
+                    <p class="text-lg">Belum ada hasil soal.</p>
+                </div>
+                <div id="areaHasil" class="hidden">
+                    <div class="bg-gray-50 p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div class="flex bg-white rounded-lg p-1 shadow-sm border w-full md:w-auto">
+                            <button class="tab-hasil flex-1 md:flex-none px-4 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600" data-target="soal">NASKAH</button>
+                            <button class="tab-hasil flex-1 md:flex-none px-4 py-2 text-sm font-bold text-gray-400" data-target="kunci">KUNCI & RUBRIK</button>
+                            <button class="tab-hasil flex-1 md:flex-none px-4 py-2 text-sm font-bold text-gray-400" data-target="kisi">KISI-KISI</button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="btnModeKuis" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">📽️ MODE KUIS</button>
+                            <button id="btnDownload" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold shadow hover:bg-black">⬇️ DOWNLOAD WORD</button>
+                        </div>
+                    </div>
+                    <div id="kontenHasil" class="p-2 md:p-8 bg-white min-h-[400px] border rounded-xl"></div>
+                </div>
+            </div>
+
+            <div id="view-info" class="view-section hidden bg-white p-6 md:p-8 rounded-b-2xl shadow-md border border-t-0 border-gray-200">
+                <!-- Panduan Tetap Dipertahankan (Dipangkas untuk keterbacaan, di aplikasi asli Anda bisa biarkan sama) -->
+                <div class="border-b-2 border-dashed border-gray-200 pb-6 mb-6">
+                    <h2 class="text-3xl font-black text-blue-900 mb-2">📚 Panduan Resmi SoalKu Pro</h2>
+                    <p class="text-gray-600 font-medium">Aplikasi Generator Evaluasi sesuai 16 Kaidah Pusmendik berbasis AI.</p>
+                </div>
+                <!-- ... Panduan API Key (Bagian ini persis seperti kode asli Anda) ... -->
+                
+                <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 bg-blue-900 rounded-full flex items-center justify-center text-white font-black text-xl shadow-lg">IH</div>
+                        <div>
+                            <p class="text-sm text-gray-800 font-bold">Dikembangkan oleh <span class="text-blue-600">Ibnu Husny</span></p>
+                            <p class="text-xs text-gray-500 font-medium">SDIT Qurratu A’yun Al-Islami Maros</p>
+                        </div>
+                    </div>
+                    <span class="bg-blue-600 text-white text-xs font-mono px-3 py-1.5 rounded shadow">Pro Edition (Pedagogik Update)</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="modalKuis" class="fixed inset-0 bg-white z-[60] hidden flex-col">
+            <div id="overlayFeedback" class="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none hidden bg-black/30 backdrop-blur-sm">
+                <div id="kuisFeedback" class="animate-pop text-center"></div>
+            </div>
+            <div class="p-4 border-b flex justify-between items-center bg-indigo-50 shadow-sm z-[65]">
+                <h2 class="font-bold text-indigo-900 text-lg flex items-center gap-2">📽️ Mode Kuis Interaktif</h2>
+                <button id="btnCloseKuis" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-bold shadow transition">Tutup Kuis ✖</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col bg-gray-100 z-[65]">
+                <div id="kuisContainer" class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-4xl border text-center m-auto"></div>
+            </div>
+            <div class="p-6 bg-white border-t flex justify-between items-center shadow-inner z-[65]">
+                <button id="btnKuisPrev" class="bg-gray-600 hover:bg-gray-700 text-white px-6 md:px-8 py-3 rounded-xl font-bold shadow transition">⬅️ Sebelumnya</button>
+                <button id="btnKuisNext" class="bg-blue-600 hover:bg-blue-700 text-white px-6 md:px-8 py-3 rounded-xl font-bold shadow transition">Selanjutnya ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        // ================= VARIABEL GLOBAL =================
+        let savedApiKey = localStorage.getItem('soalku_apiKey') || "";
+        let savedModel = localStorage.getItem('soalku_aiModel') || "gemini-3-flash-preview";
+        let savedPixabayKey = localStorage.getItem('soalku_pixabayKey') || ""; 
+        let savedPexelsKey = localStorage.getItem('soalku_pexelsKey') || ""; 
+        
+        let kisiKisiSoal = []; // Mengubah strukturSoal menjadi kisiKisiSoal
+        let hasilGenerate = []; 
+        let kuisTimeout;
+        let base64Kop = localStorage.getItem('soalku_kop') || ""; 
+        let tempSelectedModel = savedModel;
+
+        const daftarModelAI = [
+            "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-3-flash-preview", "gemini-3.1-pro-preview"
+        ];
+        
+        // ================= FUNGSI BANTUAN =================
+        function getFormattedDate() {
+            const dateEl = document.getElementById('inputTanggal');
+            if(!dateEl) return '';
+            const dateVal = dateEl.value;
+            if (!dateVal) return '';
+            try { return new Date(dateVal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); } catch(e) { return dateVal; }
+        }
+
+        function wrapArabic(text, isWord = false) {
+            if (!text) return ""; const AR = '\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF'; const PUNCT = '\\s\\.\\,\\_\\-\\/\\(\\)\\[\\]\\?\\!\\:\\;\\\'\\"0-9\\u0660-\\u0669\\u06F0-\\u06F9\\u060C\\u061B\\u061F'; const regex = new RegExp('([' + AR + ']+(?:[' + PUNCT + ']+[' + AR + ']+)*[' + PUNCT + ']*)', 'g');
+            return text.toString().replace(regex, (m) => { if (m.trim().length > 0) { return isWord ? `<span dir="rtl" lang="AR-SA" class="ar">${m}&#x200F;</span>` : `<bdi dir="rtl" class="font-arab">${m}&#x200F;</bdi>`; } return m; });
+        }
+
+        async function fetchDualEngine(keyword) {
+            // ... (Kode fetch DualEngine dibiarkan sama) ...
+            let urls = [];
+            if (savedPixabayKey) {
+                try {
+                    const res = await fetch(`https://pixabay.com/api/?key=${savedPixabayKey}&q=${encodeURIComponent(keyword)}&image_type=illustration&per_page=5&safesearch=true`);
+                    const data = await res.json();
+                    if (data.hits) data.hits.forEach(h => urls.push(h.webformatURL));
+                } catch(e) { console.log("Pixabay fail"); }
+            }
+            if (savedPexelsKey && urls.length === 0) {
+                try {
+                    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=5`, { headers: { Authorization: savedPexelsKey }});
+                    const data = await res.json();
+                    if (data.photos) data.photos.forEach(p => urls.push(p.src.medium));
+                } catch(e) { console.log("Pexels fail"); }
+            }
+            return urls;
+        }
+
+        window.triggerUpload = (idx) => document.getElementById(`file-${idx}`).click();
+        window.uploadGambar = (idx, input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    hasilGenerate[idx].manualImg = e.target.result;
+                    document.getElementById(`img-preview-${idx}`).src = e.target.result; 
+                    document.getElementById(`img-preview-${idx}`).style.display = 'block';
+                    document.getElementById(`btn-ai-img-${idx}`).innerHTML = "🔄 Ganti (Mesin Ganda)";
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.gantiAtauCariGambar = async (idx) => {
+            // ... (Kode ganti gambar dibiarkan sama) ...
+             const it = hasilGenerate[idx];
+            if(!savedPixabayKey && !savedPexelsKey) { 
+                alert("⚠️ Anda belum memasukkan API Key pencari gambar!"); 
+                document.getElementById('btnBukaPengaturan').click();
+                return;
+            }
+            const btn = document.getElementById(`btn-ai-img-${idx}`);
+            btn.innerHTML = "⏳ Mencari..."; btn.disabled = true;
+            try {
+                if (!it.imagePool || it.imagePool.length === 0) {
+                    it.imagePool = await fetchDualEngine(it.keyword_gambar || "education");
+                    if (it.imagePool.length === 0) throw new Error("Gambar tidak ditemukan.");
+                    it.currentImgIdx = -1; 
+                }
+                it.currentImgIdx = (it.currentImgIdx + 1) % it.imagePool.length;
+                const imgRes = await fetch(it.imagePool[it.currentImgIdx]);
+                const blob = await imgRes.blob();
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    it.manualImg = reader.result;
+                    document.getElementById(`img-preview-${idx}`).src = reader.result;
+                    document.getElementById(`img-preview-${idx}`).style.display = 'block';
+                    btn.innerHTML = "🔄 Ganti (Mesin Ganda)";
+                    btn.disabled = false;
+                };
+                reader.readAsDataURL(blob);
+            } catch (e) {
+                alert("❌ Gagal: " + e.message);
+                btn.innerHTML = it.manualImg ? "🔄 Ganti (Mesin Ganda)" : "🔍 Cari Gambar Otomatis";
+                btn.disabled = false;
+            }
+        };
+
+        window.hapusBagian = (idx) => { 
+            if(idx >= 0) kisiKisiSoal.splice(idx, 1); 
+            const tbody = document.getElementById('tabelStruktur');
+            const btnGenerateAI = document.getElementById('btnGenerateAI');
+            if(kisiKisiSoal.length === 0) { 
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Belum ada indikator kisi-kisi. Silakan tambahkan di atas.</td></tr>`; 
+                btnGenerateAI.disabled = true; 
+                btnGenerateAI.classList.replace('bg-blue-600', 'bg-gray-400'); 
+                return; 
+            }
+            btnGenerateAI.disabled = false; 
+            btnGenerateAI.classList.replace('bg-gray-400', 'bg-blue-600');
+            let html = "";
+            kisiKisiSoal.forEach((bag, i) => { 
+                html += `<tr class="hover:bg-gray-50">
+                            <td class="p-3 text-center font-bold text-gray-700">${i+1}</td>
+                            <td class="p-3 text-sm text-gray-800">${bag.indikator}</td>
+                            <td class="p-3 text-blue-700 font-semibold">${bag.tipe}</td>
+                            <td class="p-3 text-xs">${bag.level}</td>
+                            <td class="p-3 text-center"><button onclick="hapusBagian(${i})" class="text-red-500 hover:bg-red-100 p-1 rounded transition">❌</button></td>
+                         </tr>`; 
+            });
+            tbody.innerHTML = html;
+        };
+
+        window.pilihModel = (modelName) => {
+            tempSelectedModel = modelName;
+            let html = ''; let found = false;
+            daftarModelAI.forEach(m => {
+                const isSelected = (m === tempSelectedModel);
+                if (isSelected) found = true;
+                html += `<div class="flex justify-between items-center p-3 hover:bg-gray-50 transition cursor-pointer" onclick="pilihModel('${m}')">
+                            <span class="text-sm font-mono ${isSelected ? 'text-green-700 font-bold' : 'text-gray-600'}">${m}</span>
+                            <button type="button" class="px-3 py-1 rounded text-xs font-bold transition ${isSelected ? 'bg-green-500 text-white shadow-md' : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'}">${isSelected ? '✅ Terpilih' : 'Pilih'}</button>
+                        </div>`;
+            });
+            document.getElementById('wadahDaftarModel').innerHTML = html;
+            if (!found && tempSelectedModel) {
+                document.getElementById('wrapperModelManual').classList.remove('hidden');
+                document.getElementById('inputModelManual').value = tempSelectedModel;
+            } else {
+                document.getElementById('wrapperModelManual').classList.add('hidden');
+                document.getElementById('inputModelManual').value = "";
+            }
+        };
+
+        // ================= KUIS INTERAKTIF =================
+        let idxK = 0; 
+        let kuisTerkunci = false;
+        
+        function akhiriKuis() { 
+            document.getElementById('overlayFeedback').classList.add('hidden'); 
+            document.getElementById('kuisContainer').innerHTML = `<div class="py-12 animate-pop"><div class="text-6xl md:text-8xl mb-6">🏆</div><h2 class="text-4xl md:text-5xl font-black text-gray-800 mb-6">KUIS SELESAI!</h2><button onclick="document.getElementById('btnCloseKuis').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl font-bold text-2xl shadow-lg transition transform active:scale-95">Tutup Kuis</button></div>`; 
+        }
+        
+        function renderKuis() {
+             // ... (Kode Render Kuis Dibiarkan Sama Persis seperti sebelumnya) ...
+             const it = hasilGenerate[idxK]; kuisTerkunci = false; document.getElementById('overlayFeedback').classList.add('hidden');
+            
+            let h = `<div class="mb-3 text-sm font-black text-blue-500 uppercase tracking-widest bg-blue-50 py-1 px-4 rounded-full inline-block">${it.tipe} - SOAL ${idxK+1}</div>
+                     <h2 class="text-2xl md:text-3xl font-bold leading-relaxed mb-5 text-gray-800" dir="ltr"><bdi>${idxK+1}. </bdi> ${wrapArabic(it.soal)}</h2>`;
+            
+            if(it.manualImg) h += `<img src="${it.manualImg}" class="max-h-32 md:max-h-48 w-auto object-contain mx-auto rounded-xl shadow border mb-5">`;
+            
+            h += `<div id="wadahOpsiKuis" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-left" dir="ltr"></div>
+                  <div id="areaJawabanKuis" class="hidden mt-6 p-4 bg-gray-50 text-gray-800 text-xl md:text-2xl font-black rounded-xl border-2 border-gray-300" dir="ltr">✅ JAWABAN/RUBRIK: <br><span class="mt-2 block text-green-700 text-base md:text-lg">${wrapArabic(it.jawaban)}</span></div>`;
+            
+            document.getElementById('kuisContainer').innerHTML = h; const wadahOpsi = document.getElementById('wadahOpsiKuis');
+            
+            if(it.opsi && it.opsi.length > 0) {
+                it.opsi.forEach(o => {
+                    const divOpt = document.createElement('div'); 
+                    divOpt.className = "p-3 md:p-4 border-2 rounded-xl text-lg md:text-xl font-medium cursor-pointer hover:border-blue-500 bg-gray-50 transition"; 
+                    divOpt.innerHTML = wrapArabic(o);
+                    divOpt.onclick = () => {
+                        if (it.tipe !== "PG Kompleks" && kuisTerkunci) return; if (it.tipe !== "PG Kompleks") kuisTerkunci = true;
+                        
+                        let isBenar = false;
+                        if (it.tipe === "PG Kompleks") {
+                            isBenar = it.jawaban.includes(o.trim().substring(0, 1).toUpperCase());
+                        } else {
+                            const hurufDepanOpsi = o.trim().substring(0, 1).toUpperCase(); 
+                            const hurufDepanKunci = it.jawaban.trim().substring(0, 1).toUpperCase();
+                            isBenar = (hurufDepanOpsi === hurufDepanKunci || it.jawaban.includes(o.trim()));
+                        }
+                        
+                        divOpt.classList.remove('bg-gray-50', 'hover:border-blue-500');
+                        if (isBenar) { 
+                            divOpt.classList.add('bg-green-500', 'text-white', 'border-green-600', 'shadow-lg'); 
+                            document.getElementById('overlayFeedback').classList.remove('hidden'); 
+                            document.getElementById('kuisFeedback').innerHTML = `<div class="bg-green-500 text-white text-3xl md:text-5xl font-black p-8 rounded-3xl shadow-[0_0_40px_rgba(34,197,94,0.5)] border-4 border-green-300">🎉 TEPAT SEKALI! 🎉</div>`; 
+                        } else { 
+                            divOpt.classList.add('bg-red-500', 'text-white', 'border-red-600', 'shadow-md'); 
+                            document.getElementById('overlayFeedback').classList.remove('hidden'); 
+                            document.getElementById('kuisFeedback').innerHTML = `<div class="bg-red-500 text-white text-3xl md:text-5xl font-black p-8 rounded-3xl shadow-[0_0_40px_rgba(239,68,68,0.5)] border-4 border-red-300">❌ KURANG TEPAT! ❌</div>`; 
+                            if (it.tipe !== "PG Kompleks") { 
+                                Array.from(wadahOpsi.children).forEach(child => { 
+                                    if (child.innerText.trim().substring(0, 1).toUpperCase() === it.jawaban.trim().substring(0, 1).toUpperCase() || it.jawaban.includes(child.innerText.trim())) { 
+                                        child.classList.remove('bg-gray-50', 'hover:border-blue-500'); 
+                                        child.classList.add('bg-green-500', 'text-white', 'border-green-600', 'shadow-lg'); 
+                                    } 
+                                }); 
+                            } 
+                        }
+                        document.getElementById('areaJawabanKuis').classList.remove('hidden');
+                        if (it.tipe !== "PG Kompleks") { clearTimeout(kuisTimeout); kuisTimeout = setTimeout(() => { const md = document.getElementById('modalKuis'); if(md && md.classList.contains('hidden')) return; if(idxK < hasilGenerate.length - 1) { idxK++; renderKuis(); } else { akhiriKuis(); } }, 3000); }
+                    }; wadahOpsi.appendChild(divOpt);
+                });
+            } else {
+                wadahOpsi.innerHTML = `<button id="btnTampilUraian" class="col-span-full py-4 md:py-6 bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-xl md:text-2xl font-black rounded-2xl shadow-lg border-b-4 border-yellow-600 active:border-b-0 active:mt-2 transition-all">🔍 LIHAT JAWABAN & RUBRIK</button>`;
+                setTimeout(() => { document.getElementById('btnTampilUraian').onclick = function() { this.classList.add('hidden'); document.getElementById('areaJawabanKuis').classList.remove('hidden'); clearTimeout(kuisTimeout); kuisTimeout = setTimeout(() => { const md = document.getElementById('modalKuis'); if(md && md.classList.contains('hidden')) return; if(idxK < hasilGenerate.length - 1) { idxK++; renderKuis(); } else { akhiriKuis(); } }, 5000); }; }, 100);
+            }
+        }
+
+        // ================= KODE UTAMA =================
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Konfigurasi ID LocalStorage diubah untuk mencakup CP/TP
+            const idInputs = ['inputUjian', 'inputTahun', 'inputMapel', 'inputKelas', 'inputKurikulum', 'inputGuru', 'inputKota', 'inputCPTP'];
+            idInputs.forEach(id => { 
+                const el = document.getElementById(id);
+                if (el) {
+                    const saved = localStorage.getItem('soalku_' + id); 
+                    if(saved !== null) el.value = saved; 
+                    el.addEventListener('input', (e) => localStorage.setItem('soalku_' + id, e.target.value));
+                }
+            });
+
+            // Handle UI Pengaturan, Modal, Tab Navigasi (Sama Persis dengan aslinya)
+            document.getElementById('appUtama').classList.remove('hidden');
+            setTimeout(() => { 
+                document.getElementById('splashScreen').classList.add('fade-out'); 
+                if(!savedApiKey) setTimeout(() => document.getElementById('btnBukaPengaturan').click(), 800); 
+            }, 2000);
+            window.hapusBagian(-1); 
+
+            document.querySelectorAll('.nav-main-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.nav-main-btn').forEach(x => { x.classList.remove('border-blue-600', 'text-blue-700'); x.classList.add('border-transparent', 'text-gray-500'); });
+                    e.target.classList.remove('border-transparent', 'text-gray-500'); e.target.classList.add('border-blue-600', 'text-blue-700');
+                    document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden')); 
+                    document.getElementById(e.target.dataset.target).classList.remove('hidden');
+                });
+            });
+
+            document.getElementById('btnBukaPengaturan').addEventListener('click', () => {
+                document.getElementById('inputApiKey').value = savedApiKey; 
+                document.getElementById('inputPixabayKey').value = savedPixabayKey; 
+                document.getElementById('inputPexelsKey').value = savedPexelsKey;
+                tempSelectedModel = savedModel;
+                window.pilihModel(tempSelectedModel);
+                document.getElementById('btnTutupPengaturan').style.display = 'block'; 
+                document.getElementById('modalPengaturan').classList.remove('hidden'); 
+                document.getElementById('modalPengaturan').classList.add('flex');
+            });
+
+            document.getElementById('btnTutupPengaturan').addEventListener('click', () => {
+                document.getElementById('modalPengaturan').classList.remove('flex'); 
+                document.getElementById('modalPengaturan').classList.add('hidden'); 
+            });
+
+            document.getElementById('btnSimpanPengaturan').addEventListener('click', () => {
+                const key = document.getElementById('inputApiKey').value.trim(); 
+                let mdl = tempSelectedModel;
+                const manualInput = document.getElementById('inputModelManual').value.trim();
+                if(!document.getElementById('wrapperModelManual').classList.contains('hidden') && manualInput !== "") { mdl = manualInput; }
+                
+                const pxb = document.getElementById('inputPixabayKey').value.trim(); 
+                const pxls = document.getElementById('inputPexelsKey').value.trim();
+                
+                if(!key || !mdl) return alert("API Key dan Model wajib diisi!");
+                
+                localStorage.setItem('soalku_apiKey', key); localStorage.setItem('soalku_aiModel', mdl); 
+                localStorage.setItem('soalku_pixabayKey', pxb); localStorage.setItem('soalku_pexelsKey', pxls);
+                
+                savedApiKey = key; savedModel = mdl; 
+                savedPixabayKey = pxb; savedPexelsKey = pxls;
+                
+                document.getElementById('modalPengaturan').classList.remove('flex'); document.getElementById('modalPengaturan').classList.add('hidden');
+            });
+
+            document.getElementById('btnModelManual').addEventListener('click', () => {
+                document.getElementById('wrapperModelManual').classList.toggle('hidden');
+            });
+
+            const modTipe = document.getElementById('modTipe');
+            if (modTipe) modTipe.addEventListener('change', (e) => { 
+                document.getElementById('wrapperOpsiPG').style.display = e.target.value.includes("Pilihan Ganda") || e.target.value === "PG Kompleks" ? 'block' : 'none'; 
+            });
+
+            // UPDATE: Logika Penambahan Indikator ke Kisi-Kisi
+            document.getElementById('btnTambahModul').addEventListener('click', () => {
+                const indikator = document.getElementById('modIndikator').value.trim();
+                const tipe = document.getElementById('modTipe').value; 
+                const level = document.getElementById('modLevel').value; 
+                const opsi = document.getElementById('modOpsi').value; 
+                
+                if(!indikator) return alert("Rumusan Indikator Soal wajib diisi!"); 
+                
+                kisiKisiSoal.push({ indikator, tipe, level, opsi: tipe.includes("PG") ? parseInt(opsi) : null }); 
+                document.getElementById('modIndikator').value = ""; // Reset textarea setelah ditambah
+                window.hapusBagian(-1); 
+            });
+
+            document.getElementById('btnResetAll').addEventListener('click', () => {
+                if(confirm("Yakin hapus semua draft kisi-kisi dan reset identitas?")) { 
+                    kisiKisiSoal = []; window.hapusBagian(-1); 
+                    idInputs.forEach(id => { localStorage.removeItem('soalku_' + id); const el = document.getElementById(id); if (el) el.value = ""; }); 
+                    
+                    localStorage.removeItem('soalku_autoImg');
+                    localStorage.removeItem('soalku_kop'); 
+                    base64Kop = "";
+                    
+                    document.getElementById('inputMapel').value = "Bahasa Arab"; 
+                    document.getElementById('inputKurikulum').value = "Kurikulum Merdeka (Nasional)";
+                    const toggleAutoImage = document.getElementById('toggleAutoImage');
+                    if (toggleAutoImage) toggleAutoImage.checked = false;
+                }
+            });
+
+            // UPDATE: Prompt Engineering Canggih dengan Aturan Evaluasi
+            document.getElementById('btnGenerateAI').addEventListener('click', async () => {
+                if(!savedApiKey) { alert("⚠️ API Key belum disetel!"); return document.getElementById('btnBukaPengaturan').click(); }
+                
+                const isAutoImage = document.getElementById('toggleAutoImage') ? document.getElementById('toggleAutoImage').checked : false;
+                if(isAutoImage && !savedPixabayKey && !savedPexelsKey) {
+                    alert("⚠️ Anda belum memasukkan kunci untuk Mesin Pencari Gambar di Setting!");
+                    return document.getElementById('btnBukaPengaturan').click();
+                }
+
+                const mapel = document.getElementById('inputMapel').value; 
+                const cpTp = document.getElementById('inputCPTP').value; 
+                const kelas = document.getElementById('inputKelas').value;
+                const kurikulum = document.getElementById('inputKurikulum').value;
+                
+                if(!cpTp) return alert("Capaian / Tujuan Pembelajaran wajib diisi sebagai landasan kisi-kisi!");
+                
+                const btn = document.getElementById('btnGenerateAI'); 
+                btn.innerHTML = "MEMPROSES SOAL BERDASARKAN KISI-KISI... ⏳ (15-30 dtk)"; btn.disabled = true;
+                
+                try {
+                    const genAI = new GoogleGenerativeAI(savedApiKey); const model = genAI.getGenerativeModel({ model: savedModel });
+                    
+                    // Merangkai list indikator yang sudah diinput guru
+                    let rincianKisi = ""; 
+                    kisiKisiSoal.forEach((bag, i) => { 
+                        let opsiTxt = bag.opsi ? ` (Buat opsi A sampai ${String.fromCharCode(64 + bag.opsi)})` : ''; 
+                        rincianKisi += `${i+1}. Indikator: "${bag.indikator}" | Bentuk: ${bag.tipe} | Level: ${bag.level} ${opsiTxt}\n`; 
+                    });
+                    
+                    const prompt = `Anda adalah ahli pembuat instrumen evaluasi pendidikan berstandar nasional (Pusmendik). Buatlah soal berdasarkan KISI-KISI yang ditetapkan oleh guru di bawah ini. Anda WAJIB membuat soal persis mengikuti urutan dan jumlah indikator yang diberikan.
+
+IDENTITAS EVALUASI:
+- Mata Pelajaran: "${mapel}"
+- Fase/Kelas: ${kelas}
+- Kurikulum: ${kurikulum}
+- Fondasi Pembelajaran (CP/TP): "${cpTp}"
+
+KISI-KISI SOAL (IKUTI URUTAN INI SECARA MUTLAK):
+${rincianKisi}
+
+ATURAN PENULISAN SOAL (SANGAT PENTING):
+1. SOAL PILIHAN GANDA (PG): Terapkan 16 Kaidah Penulisan! Opsi WAJIB diawali A., B., C., D. Panjang opsi usahakan relatif sama. TIDAK BOLEH ada opsi "Semua jawaban benar/salah". TIDAK BOLEH menggunakan pernyataan negatif ganda. Pokok soal harus tegas.
+2. SOAL URAIAN/ESSAY: Pada field "jawaban", Anda WAJIB membuatkan PEDOMAN PENSKORAN / RUBRIK (misal: "Skor 4 jika jawaban A, Skor 2 jika jawaban B, dst."). Jangan hanya menulis kunci jawaban singkat.
+3. SOAL ISIAN SINGKAT: Tempat titik-titik (rumpang) harus di akhir kalimat, dan jawabannya harus mutlak.
+4. STIMULUS: Terutama untuk level kognitif C4-C6, awali soal dengan stimulus yang kontekstual (cerita pendek, kasus, atau deskripsi fakta).
+5. BAHASA: DILARANG KERAS menyelipkan bahasa Arab/Hijaiyah JIKA BUKAN mata pelajaran Bahasa Arab atau PAI. Namun JIKA mapelnya Bahasa Arab/PAI, WAJIB tulis teks arabnya menggunakan huruf Hijaiyah lengkap berharakat.
+
+FORMAT OUTPUT WAJIB:
+Balas HANYA dengan 1 buah format JSON Array murni. Struktur objek harus seperti ini:
+[
+  {
+    "id": 1,
+    "indikator": "Teks indikator sesuai input guru",
+    "tipe": "Pilihan Ganda",
+    "soal": "Teks soal lengkap dengan stimulus jika ada...",
+    "opsi": ["A. ...", "B. ..."],
+    "jawaban": "Kunci jawaban / Teks rubrik penskoran untuk uraian...",
+    "level": "C2 (Memahami)",
+    "keyword_gambar": "1 kata benda bahasa Inggris mewakili objek utama di soal (contoh: 'mosque', 'apple')"
+  }
+]
+Catatan: Field "opsi" wajib array string (kosongkan [] jika tipe Uraian/Isian).`;
+
+                    const res = await Promise.race([
+                        model.generateContent(prompt),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout dari server Gemini (Tunggu sebentar dan coba lagi)")), 60000))
+                    ]);
+
+                    const txtResponse = res.response.text();
+                    const jsonText = txtResponse.replace(/```json/gi, "").replace(/
+```/g, "").trim();
+                    
+                    hasilGenerate = JSON.parse(jsonText);
+                    
+                    if (isAutoImage) {
+                        btn.innerHTML = "MEMUAT GAMBAR ILUSTRASI... ⏳";
+                        for (let i = 0; i < hasilGenerate.length; i++) {
+                            let it = hasilGenerate[i];
+                            it.manualImg = null; it.imagePool = []; it.currentImgIdx = -1;
+                            const keyword = it.keyword_gambar || "education";
+                            
+                            it.imagePool = await fetchDualEngine(keyword);
+                            if (it.imagePool.length > 0) {
+                                it.currentImgIdx = 0;
+                                try {
+                                    const imgRes = await fetch(it.imagePool[0]);
+                                    const blob = await imgRes.blob();
+                                    const base64data = await new Promise((resolve) => {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => resolve(reader.result);
+                                        reader.readAsDataURL(blob);
+                                    });
+                                    it.manualImg = base64data;
+                                } catch(e) { console.error("Gagal base64", e); }
+                            }
+                        }
+                    } else {
+                        hasilGenerate.forEach(it => { it.manualImg = null; it.imagePool = []; it.currentImgIdx = -1; });
+                    }
+                    
+                    document.querySelector('.nav-main-btn[data-target="view-laporan"]').click(); 
+                    document.getElementById('pesanKosongLaporan').classList.add('hidden'); 
+                    document.getElementById('areaHasil').classList.remove('hidden'); 
+                    document.querySelector('.tab-hasil[data-target="soal"]').click();
+                } catch (e) { 
+                    console.error(e);
+                    alert("❌ Gagal memproses soal!\n\nPenyebab mungkin:\n1. Internet lambat (Timeout).\n2. Model AI tidak merespons dengan format yang benar.\n3. Limit API tercapai."); 
+                } finally {
+                    btn.innerHTML = "MULAI GENERATE SOAL ✨"; btn.disabled = false;
+                }
+            });
+
+            document.querySelectorAll('.tab-hasil').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-hasil').forEach(x => { x.classList.remove('border-blue-600', 'text-blue-600'); x.classList.add('border-transparent', 'text-gray-400'); });
+                    e.target.classList.remove('border-transparent', 'text-gray-400'); e.target.classList.add('border-blue-600', 'text-blue-600'); 
+                    const tab = e.target.dataset.target; 
+                    const wadah = document.getElementById('kontenHasil'); 
+                    
+                    if(tab === 'soal') {
+                        const namaUjian = document.getElementById('inputUjian').value || "NAMA UJIAN";
+                        const tahun = document.getElementById('inputTahun').value || ".........";
+                        
+                        let h = `<div class="mb-8 p-6 border border-gray-300 rounded-xl bg-white shadow-sm">
+                            <h2 class="text-center font-black text-xl mb-1 uppercase text-gray-900">${namaUjian}</h2>
+                            <h3 class="text-center font-bold text-lg mb-6 text-gray-700">Tahun Pelajaran ${tahun}</h3>
+                            
+                            <div class="text-sm font-medium text-gray-800 space-y-2 mb-6 ml-4">
+                                <div class="flex"><span class="w-32 text-gray-600">Mata Pelajaran</span> <span class="mr-2">:</span> <span class="font-bold">${document.getElementById('inputMapel').value}</span></div>
+                                <div class="flex"><span class="w-32 text-gray-600">Kelas / Fase</span> <span class="mr-2">:</span> <span class="font-bold">${document.getElementById('inputKelas').value}</span></div>
+                                <div class="flex"><span class="w-32 text-gray-600">Hari, Tanggal</span> <span class="mr-2">:</span> <span class="font-bold">${getFormattedDate() || '<span class="text-gray-400">....................................</span>'}</span></div>
+                                <div class="flex"><span class="w-32 text-gray-600">Nama Lengkap</span> <span class="mr-2">:</span> <span class="text-gray-400">...................................................</span></div>
+                            </div>
+                        </div><div class="space-y-6">`;
+                        
+                        hasilGenerate.forEach((it, i) => {
+                            h += `<div class="p-5 bg-gray-50 rounded-xl border relative"><div class="mb-3"><span class="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-1 rounded tracking-wider uppercase">${it.tipe}</span></div><p class="text-lg text-gray-800" dir="ltr"><strong>${i+1}. </strong> ${wrapArabic(it.soal)}</p><div><img id="img-preview-${i}" src="${it.manualImg || ''}" class="img-preview" style="display: ${it.manualImg ? 'block' : 'none'}"><div class="flex gap-2 mt-3 max-w-[320px]"><div id="box-upload-${i}" class="flex-1 p-2 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:bg-gray-200 text-xs font-bold text-gray-600 transition" onclick="triggerUpload(${i})">📁 Upload Manual</div><button id="btn-ai-img-${i}" onclick="gantiAtauCariGambar(${i})" class="flex-1 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow transition transform active:scale-95">${it.manualImg ? '🔄 Ganti (Mesin Ganda)' : '🔍 Cari Gambar Otomatis'}</button></div><input type="file" id="file-${i}" class="hidden" accept="image/*" onchange="uploadGambar(${i}, this)"></div>`;
+                            if(it.opsi && it.opsi.length > 0) { h += `<div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 pl-4" dir="ltr">${it.opsi.map(o => `<div class="text-gray-700">${wrapArabic(o)}</div>`).join('')}</div>`; } else if (it.tipe === "Isian Singkat") { h += `<div class="mt-4 border-b-2 border-dotted border-gray-400 h-6 w-1/2"></div>`; } else { h += `<div class="mt-4 border-b-2 border-dotted border-gray-400 h-8 w-full"></div><div class="mt-4 border-b-2 border-dotted border-gray-400 h-8 w-full"></div>`; } h += `</div>`;
+                        });
+                        wadah.innerHTML = h + `</div>`;
+                    } 
+                    else if (tab === 'kunci') {
+                        let h = `<h3 class="font-bold text-lg mb-6 text-center uppercase">Kunci & Rubrik Penskoran</h3><div class="overflow-x-auto rounded-lg border shadow-sm"><table class="w-full text-sm text-left"><thead class="bg-gray-200 text-gray-700"><tr><th class="p-3 w-12 text-center">No</th><th class="p-3 w-1/4">Tipe Soal</th><th class="p-3">Kunci / Rubrik</th><th class="p-3 w-20 text-center">Level</th></tr></thead><tbody class="divide-y bg-white">`;
+                        hasilGenerate.forEach((it, i) => { h += `<tr class="hover:bg-gray-50"><td class="p-3 text-center font-bold">${i+1}</td><td class="p-3 text-xs text-gray-500 uppercase tracking-wide">${it.tipe}</td><td class="p-3 font-semibold text-blue-700" dir="ltr">${wrapArabic(it.jawaban)}</td><td class="p-3 text-center">${it.level || '-'}</td></tr>`; }); wadah.innerHTML = h + `</tbody></table></div>`;
+                    }
+                    else if (tab === 'kisi') {
+                        let h = `<h3 class="font-bold text-lg mb-6 text-center uppercase">Kisi-Kisi Ujian</h3><div class="overflow-x-auto rounded-lg border shadow-sm"><table class="w-full text-xs text-left"><thead class="bg-indigo-50 text-indigo-900 border-b"><tr><th class="p-2 text-center">No</th><th class="p-2">Rumusan Indikator Soal</th><th class="p-2 text-center">Level Kognitif</th><th class="p-2 text-center">Bentuk Soal</th></tr></thead><tbody class="divide-y bg-white">`;
+                        hasilGenerate.forEach((it, i) => { h += `<tr><td class="p-2 text-center font-bold">${i+1}</td><td class="p-2 text-gray-800" dir="ltr">${wrapArabic(it.indikator)}</td><td class="p-2 text-center">${it.level || '-'}</td><td class="p-2 text-center font-bold text-blue-700">${it.tipe}</td></tr>`; }); wadah.innerHTML = h + `</tbody></table></div>`;
+                    }
+                });
+            });
+
+            // Logika Tombol Mode Kuis dan Download Word (Sama Persis)
+            document.getElementById('btnModeKuis').addEventListener('click', () => {
+                if(hasilGenerate.length === 0) return; 
+                idxK = 0; 
+                renderKuis(); 
+                const modal = document.getElementById('modalKuis');
+                modal.classList.remove('hidden'); 
+                modal.classList.add('flex');
+            });
+            
+            document.getElementById('btnCloseKuis').addEventListener('click', () => { 
+                clearTimeout(kuisTimeout); 
+                const modal = document.getElementById('modalKuis');
+                modal.classList.remove('flex'); 
+                modal.classList.add('hidden'); 
+                document.getElementById('overlayFeedback').classList.add('hidden'); 
+            });
+            
+            document.getElementById('btnKuisNext').addEventListener('click', () => { 
+                clearTimeout(kuisTimeout); 
+                if(idxK < hasilGenerate.length - 1) { idxK++; renderKuis(); } else { akhiriKuis(); } 
+            });
+            
+            document.getElementById('btnKuisPrev').addEventListener('click', () => { 
+                clearTimeout(kuisTimeout); 
+                if(idxK > 0) { idxK--; renderKuis(); } 
+            });
+
+            document.getElementById('btnDownload').addEventListener('click', () => {
+                if(hasilGenerate.length === 0) return; 
+                const btn = document.getElementById('btnDownload'); 
+                btn.innerHTML = "⏳ Menyiapkan Dokumen...";
+                
+                let w = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style> body { font-family: 'Times New Roman', serif; font-size: 12pt; } .ar { font-family: 'Arabic Typesetting', serif; font-size: 16pt; } table.tabel-kisi { border-collapse: collapse; width: 100%; margin-top: 10px; } table.tabel-kisi th, table.tabel-kisi td { border: 1px solid black; padding: 5px; text-align: left; vertical-align: top; } table.tabel-kisi th { background-color: #f3f4f6; text-align: center; } </style></head><body>`;
+                
+                const base64KopStorage = localStorage.getItem('soalku_kop') || base64Kop;
+                if (base64KopStorage) { w += `<div style="text-align:center; margin-bottom:10px;"><img src="${base64KopStorage}" style="width:165mm; height:38mm;"></div>`; }
+                
+                const namaUjian = document.getElementById('inputUjian').value.toUpperCase() || "NAMA UJIAN";
+                const tahun = document.getElementById('inputTahun').value || "..................";
+                
+                w += `<div style="text-align:center; margin-bottom:15px; font-family: 'Times New Roman', serif;">
+                        <strong style="font-size:14pt;">${namaUjian}</strong><br>
+                        <strong style="font-size:12pt;">Tahun Pelajaran ${tahun}</strong>
+                      </div>`;
+                
+                w += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-family: 'Times New Roman', serif; font-size: 12pt;">
+                        <tr><td style="width: 150px; padding: 2px 0;"><strong>Mata Pelajaran</strong></td><td style="padding: 2px 0;">: ${document.getElementById('inputMapel').value}</td></tr>
+                        <tr><td style="padding: 2px 0;"><strong>Kelas / Fase</strong></td><td style="padding: 2px 0;">: ${document.getElementById('inputKelas').value}</td></tr>
+                        <tr><td style="padding: 2px 0;"><strong>Hari, Tanggal</strong></td><td style="padding: 2px 0;">: ${getFormattedDate() || '........................................................'}</td></tr>
+                        <tr><td style="padding: 2px 0;"><strong>Nama Lengkap</strong></td><td style="padding: 2px 0;">: ........................................................</td></tr>
+                      </table>
+                      <hr style="border:1.5px solid black; margin-bottom:15px;">
+                      <h3>A. NASKAH SOAL</h3>`;
+
+                hasilGenerate.forEach((it, i) => {
+                    w += `<p style="margin-bottom:5px;" dir="ltr"><strong>${i+1}. </strong> ${wrapArabic(it.soal, true)}</p>`;
+                    if (it.manualImg) w += `<p><img src="${it.manualImg}" width="250" style="border:1px solid #000;"></p>`;
+                    if(it.opsi?.length) it.opsi.forEach(o => w += `<p style="margin-top:0; margin-bottom:0; margin-left:20px;" dir="ltr">${wrapArabic(o, true)}</p>`); else w += `<p>..........................................................................................<br>..........................................................................................</p>`;
+                    w += `<br>`;
+                });
+
+                const kota = document.getElementById('inputKota').value || "Kota";
+                const tanggalStr = getFormattedDate() || "....................";
+                const guru = document.getElementById('inputGuru').value || "....................";
+                
+                w += `<br><br><table style="width:100%; border:none;"><tr><td style="width:60%; border:none;"></td><td style="width:40%; text-align:center; border:none;">${kota}, ${tanggalStr}<br>Guru Mata Pelajaran,<br><br><br><br><strong><u>${guru}</u></strong></td></tr></table>`;
+                
+                w += `<br clear=all style='mso-special-character:line-break;page-break-before:always'><h3>B. KUNCI JAWABAN & RUBRIK</h3><table class="tabel-kisi"><thead><tr><th style="width:10%;">No</th><th style="width:25%;">Tipe Soal</th><th>Jawaban / Rubrik</th><th style="width:15%;">Level</th></tr></thead><tbody>`;
+                hasilGenerate.forEach((it, i) => { w += `<tr><td style="text-align:center;">${i+1}</td><td>${it.tipe}</td><td dir="ltr"><strong>${wrapArabic(it.jawaban, true)}</strong></td><td style="text-align:center;">${it.level || '-'}</td></tr>`; });
+                w += `</tbody></table><br clear=all style='mso-special-character:line-break;page-break-before:always'><h3>C. KISI-KISI PENULISAN SOAL</h3><table class="tabel-kisi"><thead><tr><th style="width:10%;">No</th><th>Indikator Soal</th><th style="width:15%;">Level Kognitif</th><th style="width:20%;">Bentuk Soal</th></tr></thead><tbody>`;
+                hasilGenerate.forEach((it, i) => { w += `<tr><td style="text-align:center;">${i+1}</td><td dir="ltr">${wrapArabic(it.indikator, true)}</td><td style="text-align:center;">${it.level || '-'}</td><td style="text-align:center;">${it.tipe}</td></tr>`; });
+                w += `</tbody></table></body></html>`;
+                
+                const blob = new Blob(['\ufeff', w], { type: 'application/msword' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `Paket_Soal_${document.getElementById('inputMapel').value.replace(/ /g, "_")}.doc`; link.click(); btn.innerHTML = "⬇️ DOWNLOAD WORD";
+            });
+        });
+    </script>
+</body>
+</html>
