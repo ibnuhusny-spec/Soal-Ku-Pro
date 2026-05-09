@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoalKu Pro - Generator Evaluasi AI (Kaidah Pusmendik)</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .font-arab { font-family: 'Arabic Typesetting', 'Traditional Arabic', serif; font-size: 1.7rem; line-height: 1.6; color: #1e3a8a; padding: 0 4px; }
         #modalKuis .font-arab { font-size: 1.6em; line-height: 1.4; }
@@ -256,7 +256,7 @@
     </div>
 
     <script type="module">
-        import { GoogleGenerativeAI } from "[https://esm.run/@google/generative-ai](https://esm.run/@google/generative-ai)";
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
         // ================= VARIABEL GLOBAL =================
         let savedApiKey = localStorage.getItem('soalku_apiKey') || "";
@@ -292,14 +292,14 @@
             let urls = [];
             if (savedPixabayKey) {
                 try {
-                    const res = await fetch(`[https://pixabay.com/api/?key=$](https://pixabay.com/api/?key=$){savedPixabayKey}&q=${encodeURIComponent(keyword)}&image_type=illustration&per_page=5&safesearch=true`);
+                    const res = await fetch(`https://pixabay.com/api/?key=${savedPixabayKey}&q=${encodeURIComponent(keyword)}&image_type=illustration&per_page=5&safesearch=true`);
                     const data = await res.json();
                     if (data.hits) data.hits.forEach(h => urls.push(h.webformatURL));
                 } catch(e) { console.log("Pixabay fail"); }
             }
             if (savedPexelsKey && urls.length === 0) {
                 try {
-                    const res = await fetch(`[https://api.pexels.com/v1/search?query=$](https://api.pexels.com/v1/search?query=$){encodeURIComponent(keyword)}&per_page=5`, { headers: { Authorization: savedPexelsKey }});
+                    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=5`, { headers: { Authorization: savedPexelsKey }});
                     const data = await res.json();
                     if (data.photos) data.photos.forEach(p => urls.push(p.src.medium));
                 } catch(e) { console.log("Pexels fail"); }
@@ -640,7 +640,6 @@ Catatan: Field "opsi" wajib array string (kosongkan [] jika tipe Uraian/Isian).`
 
                     const txtResponse = res.response.text();
                     
-                    // PENYELESAIAN ERROR VERCEL: Menggunakan RegExp utuh tanpa menulis simbol backtick 3 kali secara berurutan
                     let stringBersih = txtResponse.replace(new RegExp("`{3}json", "gi"), "");
                     stringBersih = stringBersih.replace(new RegExp("`{3}", "g"), "");
                     const jsonText = stringBersih.trim();
@@ -757,7 +756,7 @@ Catatan: Field "opsi" wajib array string (kosongkan [] jika tipe Uraian/Isian).`
                 const btn = document.getElementById('btnDownload'); 
                 btn.innerHTML = "⏳ Menyiapkan Dokumen...";
                 
-                let w = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='[http://www.w3.org/TR/REC-html40](http://www.w3.org/TR/REC-html40)'><head><meta charset='utf-8'><style> body { font-family: 'Times New Roman', serif; font-size: 12pt; } .ar { font-family: 'Arabic Typesetting', serif; font-size: 16pt; } table.tabel-kisi { border-collapse: collapse; width: 100%; margin-top: 10px; } table.tabel-kisi th, table.tabel-kisi td { border: 1px solid black; padding: 5px; text-align: left; vertical-align: top; } table.tabel-kisi th { background-color: #f3f4f6; text-align: center; } </style></head><body>`;
+                let w = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style> body { font-family: 'Times New Roman', serif; font-size: 12pt; } .ar { font-family: 'Arabic Typesetting', serif; font-size: 16pt; } table.tabel-kisi { border-collapse: collapse; width: 100%; margin-top: 10px; } table.tabel-kisi th, table.tabel-kisi td { border: 1px solid black; padding: 5px; text-align: left; vertical-align: top; } table.tabel-kisi th { background-color: #f3f4f6; text-align: center; } </style></head><body>`;
                 
                 const base64KopStorage = localStorage.getItem('soalku_kop') || base64Kop;
                 if (base64KopStorage) { w += `<div style="text-align:center; margin-bottom:10px;"><img src="${base64KopStorage}" style="width:165mm; height:38mm;"></div>`; }
